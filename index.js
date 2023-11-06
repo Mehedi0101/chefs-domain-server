@@ -25,18 +25,23 @@ async function run() {
 
         const foodCollection = client.db("chefsDomain").collection("foodItems");
 
-        // get all foods
+        // get all foods or foods by search result
         app.get('/foods', async (req, res) => {
-            const page = parseInt(req.query.page);
-            const size = parseInt(req.query.size);
-            const result = await foodCollection.find().skip(page * size).limit(size).toArray();
-            res.send(result);
-        })
+            const page = parseInt(req?.query?.page);
+            const size = parseInt(req?.query?.size);
+            const search = req?.query?.search;
 
-        // get total count of food items
-        app.get('/foodCount', async (req, res) => {
-            const count = await foodCollection.estimatedDocumentCount();
-            res.send({ count });
+            const foods = await foodCollection.find().toArray();
+
+            if (search) {
+                const searchedFoods = foods.filter(food => food.name.toLowerCase().includes(search.toLowerCase()));
+                const result = searchedFoods.slice(page*size,page*size+size);
+                res.send({result, count: searchedFoods.length});
+            }
+            else{
+                const result = foods.slice(page*size,page*size+size);
+                res.send({result, count: foods.length});
+            }
         })
 
         // Send a ping to confirm a successful connection
