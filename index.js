@@ -77,8 +77,8 @@ async function run() {
             const food = await foodCollection.findOne(query);
             const updatedQuantity = {
                 $set: {
-                    available_quantity: (parseInt(food.available_quantity) - parseInt(quantity)).toString(),
-                    orders_count: (parseInt(food.orders_count) + 1).toString()
+                    available_quantity: (parseInt(food.available_quantity) - parseInt(quantity)),
+                    orders_count: (parseInt(food.orders_count) + 1)
                 },
             };
             const result = await foodCollection.updateOne(query, updatedQuantity);
@@ -110,17 +110,29 @@ async function run() {
             const filter = { _id: new ObjectId(id) };
             const updatedFood = {
                 $set: {
-                    name : updateData.name,
-                    image : updateData.image,
-                    category : updateData.category,
-                    price : updateData.price,
-                    origin : updateData.origin,
-                    description : updateData.description,
-                    available_quantity : updateData.available_quantity
+                    name: updateData.name,
+                    image: updateData.image,
+                    category: updateData.category,
+                    price: updateData.price,
+                    origin: updateData.origin,
+                    description: updateData.description,
+                    available_quantity: parseFloat(updateData.available_quantity)
                 }
             };
 
             const result = await foodCollection.updateOne(filter, updatedFood);
+            res.send(result);
+        })
+
+
+
+        // get top picks from the database
+        app.get('/popular', async (req, res) => {
+            const query = {};
+            const options = {
+                sort: { orders_count: -1 },
+            };
+            const result = (await foodCollection.find(query, options).toArray()).slice(0,6);
             res.send(result);
         })
 
@@ -155,7 +167,7 @@ async function run() {
             else {
                 const updatedQuantity = {
                     $set: {
-                        quantity: (parseInt(prevOrders.quantity) + parseInt(newOrder.quantity)).toString()
+                        quantity: (parseInt(prevOrders.quantity) + parseInt(newOrder.quantity))
                     },
                 };
                 const result = await orderCollection.updateOne(query, updatedQuantity);
