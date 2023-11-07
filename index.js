@@ -26,6 +26,8 @@ async function run() {
         const foodCollection = client.db("chefsDomain").collection("foodItems");
         const orderCollection = client.db("chefsDomain").collection("orderCollection");
 
+
+
         // get all foods or foods by search result
         app.get('/foods', async (req, res) => {
             const page = parseInt(req?.query?.page);
@@ -57,6 +59,24 @@ async function run() {
 
 
 
+        // update the quantity of a food after an order
+        app.patch('/foods/:id', async (req, res) => {
+            const quantity = req.body.quantity;
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const food = await foodCollection.findOne(query);
+            const updatedQuantity = {
+                $set: {
+                    available_quantity: (parseInt(food.available_quantity) - parseInt(quantity)).toString(),
+                    orders_count: (parseInt(food.orders_count)+1).toString()
+                },
+            };
+            const result = await foodCollection.updateOne(query, updatedQuantity);
+            res.send(result);
+        })
+
+
+
         // get all orders from the database
         app.get('/order', async (req, res) => {
             const orders = await orderCollection.find().toArray();
@@ -80,10 +100,9 @@ async function run() {
                 res.send(result);
             }
             else {
-                console.log(prevOrders);
                 const updatedQuantity = {
                     $set: {
-                        quantity: (parseInt(prevOrders.quantity)+parseInt(newOrder.quantity)).toString()
+                        quantity: (parseInt(prevOrders.quantity) + parseInt(newOrder.quantity)).toString()
                     },
                 };
                 const result = await orderCollection.updateOne(query, updatedQuantity);
@@ -92,7 +111,7 @@ async function run() {
         })
 
 
-        
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
