@@ -35,13 +35,21 @@ async function run() {
 
             if (search) {
                 const searchedFoods = foods.filter(food => food.name.toLowerCase().includes(search.toLowerCase()));
-                const result = searchedFoods.slice(page*size,page*size+size);
-                res.send({result, count: searchedFoods.length});
+                const result = searchedFoods.slice(page * size, page * size + size);
+                res.send({ result, count: searchedFoods.length });
             }
-            else{
-                const result = foods.slice(page*size,page*size+size);
-                res.send({result, count: foods.length});
+            else {
+                const result = foods.slice(page * size, page * size + size);
+                res.send({ result, count: foods.length });
             }
+        })
+
+        // get food item by id
+        app.get('/foods/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await foodCollection.findOne(query);
+            res.send(result);
         })
 
         // Send a ping to confirm a successful connection
