@@ -60,6 +60,20 @@ async function run() {
 
 
 
+        // get food item by chef
+        app.get('/food-by-chef', async (req, res) => {
+            let query = {};
+            
+            if (req?.query?.chefEmail) {
+                query = { made_by_email: req.query.chefEmail };
+            }
+            const result = await foodCollection.find(query).toArray();
+            res.send(result);
+        })
+
+
+
+
         // add a food item
         app.post('/foods', async(req,res) => {
             const newItem = req.body;
@@ -90,6 +104,7 @@ async function run() {
         // get all orders from the database
         app.get('/order', async (req, res) => {
             let query = {};
+            
             if (req?.query?.email) {
                 query = { customerEmail: req.query.email };
             }
