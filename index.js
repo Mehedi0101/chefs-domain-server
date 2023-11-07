@@ -60,22 +60,8 @@ async function run() {
 
 
 
-        // get food item by chef
-        app.get('/food-by-chef', async (req, res) => {
-            let query = {};
-            
-            if (req?.query?.chefEmail) {
-                query = { made_by_email: req.query.chefEmail };
-            }
-            const result = await foodCollection.find(query).toArray();
-            res.send(result);
-        })
-
-
-
-
         // add a food item
-        app.post('/foods', async(req,res) => {
+        app.post('/foods', async (req, res) => {
             const newItem = req.body;
             const result = await foodCollection.insertOne(newItem);
             res.send(result);
@@ -101,10 +87,49 @@ async function run() {
 
 
 
+
+        // get food item by chef
+        app.get('/food-by-chef', async (req, res) => {
+            let query = {};
+
+            if (req?.query?.chefEmail) {
+                query = { made_by_email: req.query.chefEmail };
+            }
+            const result = await foodCollection.find(query).toArray();
+            res.send(result);
+        })
+
+
+
+
+        // update a food
+        app.patch('/food-update/:id', async (req, res) => {
+            const id = req.params.id;
+            const updateData = req.body;
+
+            const filter = { _id: new ObjectId(id) };
+            const updatedFood = {
+                $set: {
+                    name : updateData.name,
+                    image : updateData.image,
+                    category : updateData.category,
+                    price : updateData.price,
+                    origin : updateData.origin,
+                    description : updateData.description,
+                    available_quantity : updateData.available_quantity
+                }
+            };
+
+            const result = await foodCollection.updateOne(filter, updatedFood);
+            res.send(result);
+        })
+
+
+
         // get all orders from the database
         app.get('/order', async (req, res) => {
             let query = {};
-            
+
             if (req?.query?.email) {
                 query = { customerEmail: req.query.email };
             }
