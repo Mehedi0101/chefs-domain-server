@@ -24,6 +24,7 @@ async function run() {
         await client.connect();
 
         const foodCollection = client.db("chefsDomain").collection("foodItems");
+        const orderCollection = client.db("chefsDomain").collection("orderCollection");
 
         // get all foods or foods by search result
         app.get('/foods', async (req, res) => {
@@ -44,6 +45,8 @@ async function run() {
             }
         })
 
+
+
         // get food item by id
         app.get('/foods/:id', async (req, res) => {
             const id = req.params.id;
@@ -52,6 +55,44 @@ async function run() {
             res.send(result);
         })
 
+
+
+        // get all orders from the database
+        app.get('/order', async (req, res) => {
+            const orders = await orderCollection.find().toArray();
+            res.send(orders);
+        })
+
+
+
+        // post an order to the database
+        app.post('/order', async (req, res) => {
+            const newOrder = req.body;
+            const query = {
+                foodId: req.body.foodId,
+                customerEmail: req.body.customerEmail
+            }
+
+            const prevOrders = await orderCollection.findOne(query);
+
+            if (!prevOrders) {
+                const result = await orderCollection.insertOne(newOrder);
+                res.send(result);
+            }
+            else {
+                console.log(prevOrders);
+                const updatedQuantity = {
+                    $set: {
+                        quantity: (parseInt(prevOrders.quantity)+parseInt(newOrder.quantity)).toString()
+                    },
+                };
+                const result = await orderCollection.updateOne(query, updatedQuantity);
+                res.send(result);
+            }
+        })
+
+
+        
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
