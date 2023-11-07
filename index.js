@@ -59,6 +59,16 @@ async function run() {
 
 
 
+
+        // add a food item
+        app.post('/foods', async(req,res) => {
+            const newItem = req.body;
+            const result = await foodCollection.insertOne(newItem);
+            res.send(result);
+        })
+
+
+
         // update the quantity of a food after an order
         app.patch('/foods/:id', async (req, res) => {
             const quantity = req.body.quantity;
@@ -68,7 +78,7 @@ async function run() {
             const updatedQuantity = {
                 $set: {
                     available_quantity: (parseInt(food.available_quantity) - parseInt(quantity)).toString(),
-                    orders_count: (parseInt(food.orders_count)+1).toString()
+                    orders_count: (parseInt(food.orders_count) + 1).toString()
                 },
             };
             const result = await foodCollection.updateOne(query, updatedQuantity);
@@ -79,10 +89,13 @@ async function run() {
 
         // get all orders from the database
         app.get('/order', async (req, res) => {
-            const orders = await orderCollection.find().toArray();
-            res.send(orders);
+            let query = {};
+            if (req?.query?.email) {
+                query = { customerEmail: req.query.email };
+            }
+            const result = await orderCollection.find(query).toArray();
+            res.send(result);
         })
-
 
 
         // post an order to the database
@@ -108,6 +121,16 @@ async function run() {
                 const result = await orderCollection.updateOne(query, updatedQuantity);
                 res.send(result);
             }
+        })
+
+
+
+        // delete an order from the database
+        app.delete('/order/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
         })
 
 
