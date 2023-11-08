@@ -25,6 +25,7 @@ async function run() {
 
         const foodCollection = client.db("chefsDomain").collection("foodItems");
         const orderCollection = client.db("chefsDomain").collection("orderCollection");
+        const blogCollection = client.db("chefsDomain").collection("blogCollection");
 
 
 
@@ -184,6 +185,25 @@ async function run() {
             const result = await orderCollection.deleteOne(query);
             res.send(result);
         })
+
+
+
+        // get all blogs from the database
+        app.get('/blogs', async(req,res) => {
+            const result = await blogCollection.find().toArray();
+            res.send(result);
+        })
+
+
+
+        // get blog by id
+        app.get('/blogs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await blogCollection.findOne(query);
+            res.send(result);
+        })
+
 
 
 
