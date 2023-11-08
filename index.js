@@ -8,7 +8,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://chef-s-domain.web.app', 'https://console.firebase.google.com/project/chef-s-domain/overview'],
+    origin: ['https://chef-s-domain.web.app', 'https://console.firebase.google.com/project/chef-s-domain/overview'],
     credentials: true
 }));
 app.use(cookieParser());
@@ -46,9 +46,6 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-
         const foodCollection = client.db("chefsDomain").collection("foodItems");
         const orderCollection = client.db("chefsDomain").collection("orderCollection");
         const blogCollection = client.db("chefsDomain").collection("blogCollection");
@@ -71,7 +68,6 @@ async function run() {
 
         // clearing token after user logout
         app.post('/logout', async (req, res) => {
-            console.log(req.body);
             res.clearCookie('token', { maxAge: 0 }).send({ success: true });
         })
 
@@ -166,7 +162,6 @@ async function run() {
                 return res.status(403).send({ message: 'forbidden' });
             }
 
-            console.log(updateData);
             const filter = { _id: new ObjectId(id) };
             const updatedFood = {
                 $set: {
@@ -273,10 +268,6 @@ async function run() {
 
 
 
-
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         //await client.close();
