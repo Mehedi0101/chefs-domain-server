@@ -1,11 +1,18 @@
 const express = require("express");
 const app = express();
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const cors = require("cors");
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://chef-s-domain.web.app', 'https://console.firebase.google.com/project/chef-s-domain/overview'],
+    credentials: true
+}));
+app.use(cookieParser());
+
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.gxsfvvy.mongodb.net/?retryWrites=true&w=majority`;
@@ -18,6 +25,25 @@ const client = new MongoClient(uri, {
     }
 });
 
+// custom middleware
+const verifyToken = async (req, res, next) => {
+
+    const token = req?.cookies?.token;
+
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized' });
+    }
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized' });
+        }
+
+        req.user = decoded;
+        next();
+    })
+}
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -26,6 +52,28 @@ async function run() {
         const foodCollection = client.db("chefsDomain").collection("foodItems");
         const orderCollection = client.db("chefsDomain").collection("orderCollection");
         const blogCollection = client.db("chefsDomain").collection("blogCollection");
+
+
+        // token creation
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'none'
+                })
+                .send({ success: true });
+        })
+
+
+
+        // clearing token after user logout
+        app.post('/logout', async (req, res) => {
+            console.log(req.body);
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true });
+        })
 
 
 
@@ -90,8 +138,14 @@ async function run() {
 
 
         // get food item by chef
-        app.get('/food-by-chef', async (req, res) => {
+        app.get('/food-by-chef', verifyToken, async (req, res) => {
+
+            if (req?.query?.chefEmail !== req?.user?.email) {
+                return res.status(403).send({ message: 'forbidden' });
+            }
+
             let query = {};
+
 
             if (req?.query?.chefEmail) {
                 query = { made_by_email: req.query.chefEmail };
@@ -104,10 +158,15 @@ async function run() {
 
 
         // update a food
-        app.patch('/food-update/:id', async (req, res) => {
+        app.patch('/food-update/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const updateData = req.body;
 
+            if (req?.body?.email !== req?.user?.email) {
+                return res.status(403).send({ message: 'forbidden' });
+            }
+
+            console.log(updateData);
             const filter = { _id: new ObjectId(id) };
             const updatedFood = {
                 $set: {
@@ -127,20 +186,26 @@ async function run() {
 
 
 
+
+
         // get top picks from the database
         app.get('/popular', async (req, res) => {
             const query = {};
             const options = {
                 sort: { orders_count: -1 },
             };
-            const result = (await foodCollection.find(query, options).toArray()).slice(0,6);
+            const result = (await foodCollection.find(query, options).toArray()).slice(0, 6);
             res.send(result);
         })
 
 
 
+
         // get all orders from the database
-        app.get('/order', async (req, res) => {
+        app.get('/order', verifyToken, async (req, res) => {
+            if (req?.query?.email !== req?.user?.email) {
+                return res.status(403).send({ message: 'forbidden' });
+            }
             let query = {};
 
             if (req?.query?.email) {
@@ -149,6 +214,8 @@ async function run() {
             const result = await orderCollection.find(query).toArray();
             res.send(result);
         })
+
+
 
 
         // post an order to the database
@@ -189,7 +256,7 @@ async function run() {
 
 
         // get all blogs from the database
-        app.get('/blogs', async(req,res) => {
+        app.get('/blogs', async (req, res) => {
             const result = await blogCollection.find().toArray();
             res.send(result);
         })
