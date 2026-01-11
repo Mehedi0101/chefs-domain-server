@@ -9,6 +9,7 @@ const { mongoose } = require("mongoose");
 // internal imports
 const { tokenRouter } = require("./routes/tokenRouter");
 const { notFoundHandler, defaultErrorHandler } = require("./middlewares/errorHandlers");
+const { blogRouter } = require("./routes/blogRouter");
 
 // port
 const port = process.env.PORT || 5000;
@@ -58,6 +59,7 @@ app.get('/', (req, res) => {
 
 // token routes
 app.use('/jwt', tokenRouter);
+app.use('/blogs', blogRouter);
 
 // task routes
 // app.use('/tasks', taskRouter);
